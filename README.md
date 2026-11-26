@@ -53,24 +53,49 @@ The second problem it solves is **who can see what**. Developers often need log 
 
 ## Screenshots
 
-Drop PNGs into `images/` with these filenames and they will render here:
+A walkthrough of the app. All sensitive data (hostnames, usernames, IPs) in the admin views has been replaced with demo data.
 
-| View | File |
-|---|---|
-| Login | `images/login.png` |
-| Dashboard (server picker + services) | `images/dashboard.png` |
-| Log view with date filter | `images/logs.png` |
-| Admin – Servers | `images/admin-servers.png` |
-| Admin – Users | `images/admin-users.png` |
-| Admin – Access grants | `images/admin-access.png` |
-| Admin – Activity log | `images/admin-activity.png` |
+### Login
 
-```markdown
+Gradient login card over an animated "live data" backdrop. First user to hit `/login` on a fresh install becomes the devops admin.
+
+![Login](images/login.png)
+
+### Main dashboard
+
+Pick a server from the sidebar, see PM2 processes (online / stopped counts) and Docker containers side-by-side, and tail logs from any of them in the panel on the right. Developers only see the services a devops admin granted them.
+
 ![Dashboard](images/dashboard.png)
+
+### Log viewer
+
+Click any PM2 process or Docker container and its logs stream into the right-hand panel. Tail mode, date-range filter, free-text search, JSON/text view, one-click copy, and download.
+
+![Log viewer](images/logs.png)
+
+### Admin – Servers
+
+Register SSH targets. Supports both password and private-key auth, with an optional bastion / jump host. The **Test connection** button opens a live SSH session to probe for PM2 (including nvm installs) and Docker before you save. Credentials are Fernet-encrypted before they hit disk.
+
 ![Admin – Servers](images/admin-servers.png)
+
+### Admin – Users
+
+Create devops or developer users. The last devops account can't be deleted or demoted so you can't lock yourself out. Grant counts for each developer are shown inline.
+
+![Admin – Users](images/admin-users.png)
+
+### Admin – Access
+
+Per-user, per-server, per-service permissions. Tick which PM2 processes and Docker containers a developer is allowed to view. Use `*` to grant all services of a type on a server, including services added later.
+
 ![Admin – Access](images/admin-access.png)
-![Activity log](images/admin-activity.png)
-```
+
+### Admin – Activity
+
+Append-only audit log of every state-changing action: logins, logouts, server additions, user role changes, grant changes. Each entry shows who, when, from where (IP), and what.
+
+![Admin – Activity](images/admin-activity.png)
 
 ---
 
