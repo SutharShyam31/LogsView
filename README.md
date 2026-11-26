@@ -254,4 +254,4 @@ Set `LOGSVIEW_MOCK_MODE=true` (the default in `.env.example`). The app returns r
 
 This repository is published publicly as part of the author's professional portfolio. The code is viewable but **not licensed for reuse** — you may not copy, modify, redistribute, or incorporate any portion of this code or its structure into your own projects without prior written permission.
 
-See [LICENSE](LICENSE) for the full terms. For permission inquiries: `system.team@artoonsolutions.com`.
+See [LICENSE](LICENSE) for the full terms. For permission inquiries: `sutharshyam.7777@gmail.com`.
