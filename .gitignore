@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+servers.yaml
+users.dat
+activity.log
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# screenshots are OK to commit — remove this line if you want to ignore them
+# images/*.png
+# images/*.PNG

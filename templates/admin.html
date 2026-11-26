@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+{% block title %}LogsView — Admin{% endblock %}
+{% block content %}
+<div class="app admin-app">
+
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">
+        <span class="brand-mark">LV</span>
+        <div>
+          <div class="brand-name">Logs<span class="accent">View</span></div>
+          <div class="brand-sub">Admin Panel</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-body">
+      <div class="side-section">
+        <div class="side-label">Manage</div>
+        <nav class="admin-nav">
+          <button class="admin-nav-item" data-tab="users">
+            <span class="nav-icon">U</span><span>Users</span><span class="nav-badge" id="nav-users-count">0</span>
+          </button>
+          <button class="admin-nav-item" data-tab="access">
+            <span class="nav-icon">A</span><span>Access</span>
+          </button>
+          <button class="admin-nav-item active" data-tab="servers">
+            <span class="nav-icon">S</span><span>Servers</span><span class="nav-badge" id="nav-servers-count">0</span>
+          </button>
+          <button class="admin-nav-item" data-tab="alerts">
+            <span class="nav-icon">!</span><span>Alerts</span>
+          </button>
+          <button class="admin-nav-item" data-tab="activity">
+            <span class="nav-icon">L</span><span>Activity</span>
+          </button>
+        </nav>
+      </div>
+      <div class="side-section">
+        <a href="/" class="side-link">&larr; Back to logs</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="user-avatar">{{ (user.username[0] | upper) if user.username else "?" }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ user.username }}</div>
+        <div class="user-role">{{ "super admin" if user.role == "devops" else user.role }}</div>
+      </div>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </aside>
+
+  <main class="admin-main" id="admin-main">
+
+    <section class="admin-tab" data-tab="servers">
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">Servers</h1>
+          <p class="admin-sub">Machines LogsView reaches over SSH.</p>
+        </div>
+        <div class="admin-stats">
+          <div class="stat-card stat-success">
+            <div class="stat-num" id="stat-servers">0</div>
+            <div class="stat-label">Configured</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="card-label">Add a Server</div>
+        <div class="form-grid">
+          <input type="text" id="srv-label" placeholder="display name" class="form-input">
+          <input type="text" id="srv-host" placeholder="host or IP" class="form-input">
+          <input type="text" id="srv-username" placeholder="ssh username" class="form-input">
+          <input type="text" id="srv-pm2path" placeholder="PM2 path (blank = auto-detect)" class="form-input">
+        </div>
+
+        <div class="auth-toggle">
+          <span class="auth-toggle-label">Auth:</span>
+          <label class="radio-row">
+            <input type="radio" name="srv-auth" value="password" checked data-pair="srv">
+            <span>Password</span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="srv-auth" value="key" data-pair="srv">
+            <span>SSH private key</span>
+          </label>
+        </div>
+        <div id="srv-auth-password" class="auth-field">
+          <input type="password" id="srv-password" placeholder="ssh password" class="form-input">
+        </div>
+        <div id="srv-auth-key" class="auth-field" hidden>
+          <textarea id="srv-key" class="form-input form-textarea" rows="6"
+            placeholder="paste private key content (-----BEGIN OPENSSH/RSA PRIVATE KEY----- ... -----END ... -----)"></textarea>
+          <input type="password" id="srv-key-passphrase" placeholder="key passphrase (leave blank if none)" class="form-input">
+        </div>
+
+        <div class="bastion-toggle">
+          <label class="toggle-row">
+            <input type="checkbox" id="chk-bastion">
+            <span>Target is in a private subnet — connect via a bastion / jump host</span>
+          </label>
+        </div>
+
+        <div id="bastion-fields" class="bastion-fields" hidden>
+          <div class="card-label card-label-sub">Bastion / Jump Host</div>
+          <div class="form-grid">
+            <input type="text" id="bst-host" placeholder="bastion host or IP" class="form-input">
+            <input type="text" id="bst-username" placeholder="bastion username" class="form-input">
+          </div>
+          <div class="auth-toggle">
+            <span class="auth-toggle-label">Bastion auth:</span>
+            <label class="radio-row">
+              <input type="radio" name="bst-auth" value="password" checked data-pair="bst">
+              <span>Password</span>
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="bst-auth" value="key" data-pair="bst">
+              <span>SSH private key</span>
+            </label>
+          </div>
+          <div id="bst-auth-password" class="auth-field">
+            <input type="password" id="bst-password" placeholder="bastion password" class="form-input">
+          </div>
+          <div id="bst-auth-key" class="auth-field" hidden>
+            <textarea id="bst-key" class="form-input form-textarea" rows="6"
+              placeholder="paste bastion private key (e.g. rwl-bastion-key.pem contents)"></textarea>
+            <input type="password" id="bst-key-passphrase" placeholder="bastion key passphrase (leave blank if none)" class="form-input">
+          </div>
+          <p class="hint-text">
+            LogsView will open SSH to the bastion (<code>ssh -i key.pem user@bastion</code> equivalent),
+            then tunnel to the private target through it.
+          </p>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" id="btn-test">Test connection</button>
+          <button class="btn btn-primary" id="btn-add-server">Add server</button>
+          <span class="form-msg" id="form-msg"></span>
+        </div>
+        <p class="hint-text">Leave <code>PM2 path</code> blank — it is found automatically, including nvm installs under <code>/root/.nvm</code> or <code>/home/&lt;user&gt;/.nvm</code>, then remembered.</p>
+      </div>
+
+      <div class="admin-card">
+        <div class="card-label">Configured Servers</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Host</th>
+              <th>User</th>
+              <th>Via Bastion</th>
+              <th>PM2 Path</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="server-rows">
+            <tr><td colspan="6" class="empty-row">No servers configured yet.</td></tr>
+          </tbody>
+        </table>
+        <p class="warn-note">
+          Removing a server and adding it back gives it a new internal key, which wipes every user's access to it. You would have to re-grant access.
+        </p>
+      </div>
+    </section>
+
+    <section class="admin-tab" data-tab="users" hidden>
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">Users</h1>
+          <p class="admin-sub">Everyone who can sign in to LogsView.</p>
+        </div>
+        <div class="admin-stats">
+          <div class="stat-card">
+            <div class="stat-num stat-devops" id="stat-devops">0</div>
+            <div class="stat-label">Devops</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num stat-developers" id="stat-developers">0</div>
+            <div class="stat-label">Developers</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="card-label">Add a User</div>
+        <div class="form-grid form-grid-users">
+          <input type="text" id="usr-username" placeholder="username" class="form-input">
+          <input type="password" id="usr-password" placeholder="password (min 6)" class="form-input">
+          <select id="usr-role" class="form-input">
+            <option value="developer">developer</option>
+            <option value="devops">devops</option>
+          </select>
+          <button class="btn btn-primary form-action-btn" id="btn-add-user">Create user</button>
+        </div>
+        <p class="hint-text">
+          A <b>devops</b> user has full permission — every server, every app, plus this panel.
+          A <b>developer</b> can only read the logs you tick for them on the Access tab.
+          Change anyone's role with the dropdown in the table below.
+        </p>
+        <div class="form-msg" id="user-msg"></div>
+      </div>
+
+      <div class="admin-card">
+        <div class="card-label">Existing Users</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Access</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="user-rows">
+            <tr><td colspan="4" class="empty-row">No users yet — create your first one above.</td></tr>
+          </tbody>
+        </table>
+        <p class="hint-text">
+          Changing a role from the dropdown applies immediately — no sign-out needed.
+          You cannot delete your own account, and the last remaining devops user can be neither
+          deleted nor demoted, so you can never lock yourself out.
+        </p>
+      </div>
+    </section>
+
+    <section class="admin-tab" data-tab="access" hidden>
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">Access</h1>
+          <p class="admin-sub">
+            Pick a user, then tick the apps they may read logs for. Anything unticked stays
+            hidden from them — in the dashboard, in search, and in downloads.
+          </p>
+        </div>
+        <div class="admin-stats">
+          <div class="stat-card">
+            <div class="stat-num stat-devops" id="access-stat-granted">0</div>
+            <div class="stat-label">Granted</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num stat-neutral" id="access-stat-services">0</div>
+            <div class="stat-label">Services</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num stat-neutral" id="access-stat-servers">0</div>
+            <div class="stat-label">Servers</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card access-controls">
+        <div class="access-top-row">
+          <select id="access-user" class="select"></select>
+          <button class="btn" id="btn-access-reload">Reload services</button>
+          <button class="btn btn-outline-error" id="btn-access-revoke">Revoke all</button>
+        </div>
+        <p class="hint-text">
+          <b>devops</b> super admins are not listed — they always see everything, so there is nothing to tick.
+        </p>
+      </div>
+
+      <div id="access-body" class="access-body">
+        <div class="placeholder-card">Select a user above to grant access.</div>
+      </div>
+
+      <div class="access-footer" id="access-footer" hidden>
+        <div class="access-footer-msg" id="access-footer-msg">
+          <span class="access-nothing-ticked">Nothing ticked</span> — this user would see an empty dashboard.
+        </div>
+        <button class="btn btn-primary" id="btn-access-save">Save access</button>
+      </div>
+    </section>
+
+    <section class="admin-tab" data-tab="alerts" hidden>
+      <div class="admin-header">
+        <div><h1 class="admin-title">Alerts</h1><p class="admin-sub">Trigger notifications on log patterns.</p></div>
+      </div>
+      <div class="admin-card placeholder-card">Coming soon.</div>
+    </section>
+
+    <section class="admin-tab" data-tab="activity" hidden>
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">Activity</h1>
+          <p class="admin-sub">Recent actions, newest first.</p>
+        </div>
+        <div>
+          <button class="btn" id="btn-activity-refresh">Refresh</button>
+        </div>
+      </div>
+
+      <div class="admin-card activity-card">
+        <table class="data-table activity-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="activity-rows">
+            <tr><td colspan="4" class="empty-row">No activity recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

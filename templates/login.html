@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% if first_setup %}LogsView — First-time setup{% else %}LogsView — Sign in{% endif %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: "Inter", system-ui, sans-serif;
+      color: #1a1d2e;
+      background: #fafbfd;
+      overflow: hidden;
+    }
+
+    .page-tint {
+      position: fixed; inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 18%, rgba(99,102,241,0.08) 0%, transparent 45%),
+        radial-gradient(circle at 85% 82%, rgba(168,85,247,0.07) 0%, transparent 42%),
+        linear-gradient(180deg, #fafbfd 0%, #f5f3ff 100%);
+    }
+
+    /* ============ BACKGROUND LOG RAIN ============ */
+    .log-rain {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+      font-family: "Fira Code", monospace;
+      font-size: 12.5px;
+      line-height: 1.75;
+    }
+
+    .log-col {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 32px 36px;
+      animation: fall 58s linear infinite;
+      will-change: transform;
+    }
+
+    @keyframes fall {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+
+    .log-line { white-space: nowrap; color: rgba(26, 29, 46, 0.22); font-weight: 500; }
+    .log-line .ts { color: rgba(26, 29, 46, 0.3); margin-right: 10px; }
+    .log-line .svc { color: rgba(168, 85, 247, 0.4); margin-right: 7px; font-weight: 600; }
+    .log-line .lvl-info { color: rgba(37, 99, 235, 0.45); font-weight: 700; margin-right: 6px; }
+    .log-line .lvl-warn { color: rgba(217, 119, 6, 0.55); font-weight: 700; margin-right: 6px; }
+    .log-line .lvl-err  { color: rgba(220, 38, 38, 0.6); font-weight: 700; margin-right: 6px; }
+
+    .fade {
+      position: fixed; inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, #fafbfd 0%, rgba(250,251,253,0) 14%, rgba(245,243,255,0) 86%, #f5f3ff 100%);
+    }
+
+    /* ============ CENTERED LOGIN CARD ============ */
+    .scaffold {
+      position: relative; z-index: 3;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 22px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow:
+        0 30px 80px rgba(60, 50, 160, 0.14),
+        0 2px 10px rgba(60, 50, 160, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      padding: 38px 36px 30px;
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 26px;
+    }
+    .brand-mark {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: #fff;
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px;
+      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.32);
+      letter-spacing: 0.3px;
+    }
+    .brand-name { font-size: 21px; font-weight: 700; letter-spacing: -0.015em; }
+    .brand-name .accent {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-sub {
+      font-size: 11.5px; color: #64748b; margin-top: 2px; font-weight: 500;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+      animation: pulse 1.6s ease-out infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+      70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.025em; }
+    .intro {
+      font-size: 13.5px; color: #64748b;
+      margin-bottom: 24px; line-height: 1.55;
+    }
+
+    .setup-note {
+      background: rgba(99,102,241,0.09);
+      color: #4338ca;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.55;
+      margin-bottom: 18px;
+      border-left: 3px solid #6366f1;
+    }
+    .setup-note b { font-weight: 700; }
+
+    .field { margin-bottom: 14px; position: relative; }
+    .field label {
+      display: block;
+      font-size: 12px; font-weight: 600;
+      color: #4b5063; margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 13px 44px 13px 14px;
+      border: 1px solid rgba(26, 29, 46, 0.12);
+      border-radius: 11px;
+      font-family: inherit; font-size: 14px;
+      color: #1a1d2e;
+      background: rgba(255,255,255,0.75);
+      transition: border-color 0.14s, box-shadow 0.14s, background 0.14s;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: #6366f1;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.14);
+    }
+    .field input::placeholder { color: #94a3b8; }
+    .field .trailing {
+      position: absolute;
+      right: 14px; bottom: 13px;
+      color: #94a3b8; font-size: 14px;
+      pointer-events: none;
+    }
+    .field .hint {
+      display: block;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .auth-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #b91c1c;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      border-left: 3px solid #ef4444;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+      color: #fff; border: none; border-radius: 11px;
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      box-shadow:
+        0 10px 24px rgba(99,102,241,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: transform 0.08s, box-shadow 0.15s;
+      letter-spacing: 0.2px;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { box-shadow: 0 14px 30px rgba(99,102,241,0.36); }
+    .btn-primary:active { transform: translateY(1px); }
+
+    .foot {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px dashed rgba(26, 29, 46, 0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .foot .chip {
+      display: inline-block;
+      background: rgba(99,102,241,0.1);
+      color: #6366f1;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-family: "Fira Code", monospace;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .stream-chip {
+      position: fixed;
+      bottom: 20px; left: 20px;
+      z-index: 5;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(26,29,46,0.08);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-family: "Fira Code", monospace;
+      color: #4b5063;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 6px 16px rgba(15,20,40,0.06);
+    }
+    .stream-chip .live-dot { width: 6px; height: 6px; }
+  </style>
+</head>
+<body>
+  <div class="page-tint"></div>
+
+  <div class="log-rain">
+    <div class="log-col">
+      {% set lines = [
+        ("2026-11-18T09:14:03Z", "[api]",    "INFO", "info", "request completed → GET /api/servers 200 in 14ms"),
+        ("2026-11-18T09:14:04Z", "[worker]", "INFO", "info", "job #42817 picked up from queue"),
+        ("2026-11-18T09:14:04Z", "[auth]",   "INFO", "info", "session opened user=shyam2 role=devops"),
+        ("2026-11-18T09:14:05Z", "[api]",    "WARN", "warn", "slow query 1.2s on prefix scan"),
+        ("2026-11-18T09:14:05Z", "[worker]", "INFO", "info", "job #42817 done in 182ms"),
+        ("2026-11-18T09:14:06Z", "[pm2]",    "INFO", "info", "cluster: all workers healthy"),
+        ("2026-11-18T09:14:07Z", "[ssh]",    "INFO", "info", "pool reuse 172.20.50.130:22 idle=5s"),
+        ("2026-11-18T09:14:08Z", "[api]",    "ERROR","err",  "upstream timeout, retrying (attempt 1/3)"),
+        ("2026-11-18T09:14:09Z", "[api]",    "INFO", "info", "recovered after retry in 540ms"),
+        ("2026-11-18T09:14:10Z", "[worker]", "INFO", "info", "job #42818 picked up from queue"),
+        ("2026-11-18T09:14:11Z", "[api]",    "INFO", "info", "GET /api/servers/rwl/services 200 in 18ms"),
+        ("2026-11-18T09:14:12Z", "[cron]",   "INFO", "info", "daily report generated"),
+        ("2026-11-18T09:14:13Z", "[api]",    "INFO", "info", "POST /api/admin/users 200 in 42ms"),
+        ("2026-11-18T09:14:14Z", "[auth]",   "WARN", "warn", "rate limit approaching for 10.0.0.42"),
+        ("2026-11-18T09:14:15Z", "[cache]",  "INFO", "info", "LRU evicted 8 entries"),
+        ("2026-11-18T09:14:16Z", "[api]",    "INFO", "info", "SSE client connected to /stream"),
+        ("2026-11-18T09:14:17Z", "[pm2]",    "INFO", "info", "rwl-python-live restart_count=449 uptime=2h"),
+        ("2026-11-18T09:14:18Z", "[docker]", "INFO", "info", "container postgres-db health_check=ok"),
+        ("2026-11-18T09:14:19Z", "[api]",    "INFO", "info", "GET /api/admin/activity 200 in 11ms"),
+        ("2026-11-18T09:14:20Z", "[auth]",   "INFO", "info", "bcrypt verify succeeded in 118ms"),
+        ("2026-11-18T09:14:21Z", "[pm2]",    "WARN", "warn", "memory 74% on rwl-python-live"),
+        ("2026-11-18T09:14:22Z", "[worker]", "INFO", "info", "job #42819 done in 96ms"),
+        ("2026-11-18T09:14:23Z", "[api]",    "INFO", "info", "DELETE /api/admin/servers/rwl 200 in 22ms"),
+        ("2026-11-18T09:14:24Z", "[ssh]",    "INFO", "info", "bastion tunnel opened to 10.0.10.234")
+      ] %}
+      {% for pair in [lines, lines] %}
+        {% for ts, svc, lvl, cls, msg in pair %}
+          <div class="log-line"><span class="ts">{{ ts }}</span><span class="svc">{{ svc }}</span><span class="lvl-{{ cls }}">{{ lvl }}</span><span class="msg">{{ msg }}</span></div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="fade"></div>
+
+  <div class="scaffold">
+    <div class="card">
+      <div class="brand">
+        <div class="brand-mark">LV</div>
+        <div>
+          <div class="brand-name">Logs<span class="accent">View</span></div>
+          <div class="brand-sub"><span class="live-dot"></span>{% if first_setup %}first-time setup{% else %}live tail active &middot; secure sign-in{% endif %}</div>
+        </div>
+      </div>
+
+      <h1>{% if first_setup %}Create your admin{% else %}Welcome back{% endif %}</h1>
+      <p class="intro">{% if first_setup %}No users exist yet. The account you create here becomes the first devops user — full access to every server, every app, plus the admin panel.{% else %}Sign in to search, filter, stream and attribute your logs.{% endif %}</p>
+
+      {% if first_setup %}
+        <div class="setup-note">
+          <b>You're setting up the first account.</b> After this, anyone else joins only if a devops user creates them in the Users tab.
+        </div>
+      {% endif %}
+
+      {% if error %}
+        <div class="auth-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="/login" autocomplete="on">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" name="username" placeholder="e.g. shyam2" required autofocus>
+          <span class="trailing">&#128100;</span>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required {% if first_setup %}minlength="6"{% endif %}>
+          <span class="trailing">&#128274;</span>
+          {% if first_setup %}<span class="hint">Minimum 6 characters.</span>{% endif %}
+        </div>
+        <button class="btn-primary" type="submit">{% if first_setup %}Create account &amp; sign in{% else %}Sign in to LogsView{% endif %}</button>
+      </form>
+
+      <div class="foot">
+        <span class="chip">live tail</span>
+        <span class="chip">PM2 + Docker</span>
+        <span class="chip">bastion tunnel</span>
+        <span class="chip">role-based access</span>
+        <span class="chip">date range</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stream-chip"><span class="live-dot"></span>streaming demo</div>
+</body>
+</html>
